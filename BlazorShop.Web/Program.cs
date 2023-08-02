@@ -11,5 +11,6 @@ var BaseUrl = "https://localhost:7250/";
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(BaseUrl) });
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
+builder.Services.AddScoped<ICarrinhoCompraService, CarrinhoCompraService>();
 
 await builder.Build().RunAsync();
