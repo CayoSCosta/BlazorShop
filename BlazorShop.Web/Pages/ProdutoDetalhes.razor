@@ -4,7 +4,7 @@
 {
     <ExibirSpinner />
 }
-else if(MensagemErro is not null)
+else if (MensagemErro is not null)
 {
     <ExibirErro MensagemErro="@MensagemErro"></ExibirErro>
 }
@@ -24,8 +24,7 @@ else
                 </b>
             </p>
             <div>
-                <button class="btn btn-success"
-                    @onclick="() => AdicionarAoCarrinho_Click(new CarrinhoItemAdicionaDto{
+                <button class="btn btn-success" @onclick="() => AdicionarAoCarrinho_Click(new CarrinhoItemAdicionaDto{
                         CarrinhoId = UsuarioLogado.CarrinhoId,
                         ProdutoId = Produto.Id,
                         Quantidade = 1                        
@@ -34,7 +33,8 @@ else
                 </button>
             </div>
         </div>
-    </div>}
+    </div>
+}
 
 @code {
     [Inject]
@@ -46,6 +46,13 @@ else
     [Inject]
     public NavigationManager? NavigationManager { get; set; }
 
+    [Inject]
+    public IGerenciaCarrinhoItensLocalStorageService gerenciaCarrinhoItensLocalStorageService { get; set; }
+
+    [Inject]
+    public IGerenciaProdutosLocalStorageService gerenciaProdutosLocalStorageService { get; set; }
+
+    private List<CarrinhoItemDto>? CarrinhoCompraItens {get; set;}
 
     [Parameter]
     public int Id { get; set; }
@@ -58,7 +65,9 @@ else
     {
         try
         {
-            Produto = await Produtoservice.GetItem(Id);
+            CarrinhoCompraItens = await gerenciaCarrinhoItensLocalStorageService.GetCollection();
+            Produto = await GetProdutoPorId(Id);
+            @* Produto = await Produtoservice.GetItem(Id); *@
         }
         catch (Exception ex)
         {
@@ -71,11 +80,26 @@ else
         try
         {
             var carrinhoItemDto = await CarrinhoCompraService.AdcionaItem(carrinhoItemAdicionaDto);
+            if(carrinhoItemDto != null)
+            {
+                CarrinhoCompraItens.Add(carrinhoItemDto);
+                await gerenciaCarrinhoItensLocalStorageService.SaveCollection(CarrinhoCompraItens);
+            }
+
             NavigationManager.NavigateTo("/CarrinhoCompra");
         }
         catch (Exception)
         {
-            
+            throw;
         }
     }
+
+    private async Task<ProdutoDto> GetProdutoPorId(int id)
+        {
+            var produtosDto = await gerenciaProdutosLocalStorageService.GetCollection();
+            if(produtosDto != null)
+                return produtosDto.SingleOrDefault(p => p.Id == id);
+
+            return null;
+        }
 }

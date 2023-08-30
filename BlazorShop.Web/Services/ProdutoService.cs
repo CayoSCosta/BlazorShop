@@ -55,5 +55,55 @@ namespace BlazorShop.Web.Services
                 throw;
             }
         }
+
+        public async Task<IEnumerable<CategoriaDto>> GetCategorias()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/produtos/GetCategorias");
+                if (response.IsSuccessStatusCode)
+                {
+                    if (response.StatusCode == HttpStatusCode.NoContent)
+                        return Enumerable.Empty<CategoriaDto>();
+
+                    return await response.Content.ReadFromJsonAsync<IEnumerable<CategoriaDto>>();
+                }
+                else
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Status Code: {response.StatusCode} - {message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<ProdutoDto>> GetItensPorCategoria(int categoriaId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/produtos/{categoriaId}/GetItensPorCategoria");
+                if (response.IsSuccessStatusCode)
+                {
+                    if (response.StatusCode == HttpStatusCode.NoContent)
+                        return Enumerable.Empty<ProdutoDto>();
+
+                    return await response.Content.ReadFromJsonAsync<IEnumerable<ProdutoDto>>();
+                }
+                else
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Status Code: {response.StatusCode} - {message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
+            }
+        }
     }
 }

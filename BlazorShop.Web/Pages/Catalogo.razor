@@ -6,9 +6,13 @@
 {
     <ExibirSpinner />
 }
+else if(MensagemErro is not null)
+{
+    <ExibirErro MensagemErro="@MensagemErro"></ExibirErro>
+}
 else
 {
-            <h3 class="mb-5">Produtos</h3>
+<h3 class="mb-5">Produtos</h3>
     @if (Produtos.Count() > 0)
     {
         var produtosPorCategoria = from produto in Produtos
@@ -29,8 +33,38 @@ else
 
 @code {
     public IEnumerable<ProdutoDto>? Produtos { get; set; }
+
+    [Inject]   
+    public ICarrinhoCompraService? CarrinhoCompraService {get; set;}
+
+    [Inject]
+    public IGerenciaCarrinhoItensLocalStorageService gerenciaCarrinhoItensLocalStorageService {get; set;}
+
+    [Inject]
+    public IGerenciaProdutosLocalStorageService gerenciaProdutosLocalStorageService {get; set;}
+
+    public string MensagemErro { get; set; }
+
+
     protected override async Task OnInitializedAsync()
     {
-        Produtos = await produtoService.GetItens();
+        try
+        {
+            Produtos = await gerenciaProdutosLocalStorageService.GetCollection();
+            var carrinhoCompraItens = await gerenciaCarrinhoItensLocalStorageService.GetCollection();
+
+            var totalQuantidade = carrinhoCompraItens.Sum(i => i.Quantidade);
+
+            CarrinhoCompraService.RaiseEventOnCarrinhoCompraChanged(totalQuantidade);
+        }
+        catch(Exception ex)
+        {
+            MensagemErro = ex.Message;
+        }
+    }
+
+    private async Task LimpaLocalStorage(){
+        await gerenciaCarrinhoItensLocalStorageService.RemoveCollection();
+        await gerenciaProdutosLocalStorageService.RemoveCollection();
     }
 }

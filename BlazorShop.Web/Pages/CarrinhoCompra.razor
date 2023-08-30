@@ -65,6 +65,9 @@ else
     [Inject]
     public ICarrinhoCompraService? CarrinhoCompraService { get; set; }
 
+    [Inject]
+    public IGerenciaCarrinhoItensLocalStorageService? gerenciaCarrinhoItensLocalStorageService {get; set;}
+
     public List<CarrinhoItemDto>? CarrinhoCompraItens { get; set; }
 
     public string? MensagemErro { get; set; }
@@ -75,8 +78,10 @@ else
     {
         try
         {
-            CarrinhoCompraItens = await CarrinhoCompraService.GetItens(UsuarioLogado.UsuarioId.ToString());
-            CalculaResumoCarrinhoTotal();
+            CarrinhoCompraItens = await gerenciaCarrinhoItensLocalStorageService.GetCollection();
+            @* CalculaResumoCarrinhoTotal(); *@
+
+            CarrinhoChanged();
         }
         catch (Exception ex)
         {
@@ -91,7 +96,7 @@ else
 
         //Remove o item da tela do usuario
         RemoveCarrinhoItem(id);
-        CalculaResumoCarrinhoTotal();
+        CarrinhoChanged();
     }
 
     private CarrinhoItemDto GetCarrinhoItem(int id)
@@ -103,6 +108,8 @@ else
     {
         var carrinhoItemDto = GetCarrinhoItem(id);
         CarrinhoCompraItens.Remove(carrinhoItemDto);
+
+        await gerenciaCarrinhoItensLocalStorageService.SaveCollection(CarrinhoCompraItens);
     }
 
     protected async Task AtualizaQuantidadeCarrinhoItem_Click(int id, int quantidade)
@@ -119,7 +126,7 @@ else
 
                 var retornaItemAtualizadoDto = await CarrinhoCompraService.AtualizaQuantidade(atualizaItemDto);
                 AtualizaPrecoTotalItem(retornaItemAtualizadoDto);
-                CalculaResumoCarrinhoTotal();
+                CarrinhoChanged();
             }
             else
             {
@@ -153,15 +160,23 @@ else
         SetQuantidadeTotal();
     }
 
-    private void AtualizaPrecoTotalItem(CarrinhoItemDto carrinhoItemDto)
+    private async Task AtualizaPrecoTotalItem(CarrinhoItemDto carrinhoItemDto)
     {
         var item = GetCarrinhoItem(carrinhoItemDto.Id);
         if (item != null)
             item.PrecoTotal = carrinhoItemDto.Preco * carrinhoItemDto.Quantidade;
+        
+        await gerenciaCarrinhoItensLocalStorageService.SaveCollection(CarrinhoCompraItens);
     }
 
     protected async Task AtualizaQuantidade_Input(int id)
     {
         await Js.InvokeVoidAsync("TornaBotaoAtualizarQuantidadeVisivel", id, true);
+    }
+
+    private void CarrinhoChanged()
+    {
+        CalculaResumoCarrinhoTotal();
+        CarrinhoCompraService.RaiseEventOnCarrinhoCompraChanged(QuantidadeTotal);
     }
 }
